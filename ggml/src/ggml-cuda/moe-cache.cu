@@ -10156,6 +10156,10 @@ static void moe_hosted_server(moe_hosted_state * st) {
                 return;
             }
         }
+        // count from now: layers served meanwhile by a thread waiting for the stream (a CUDA graph's blocks, not in
+        // server_pending) are not the blocks that woke this thread (left counted, they ended its turn early and a
+        // block launched outside a graph waited for a mailbox nobody served: the graphs hang on Windows)
+        seen = __atomic_load_n(&st->last_seq, __ATOMIC_ACQUIRE);
         for (;;) {
             if (st->server_stop.load(std::memory_order_relaxed)) {
                 return;
